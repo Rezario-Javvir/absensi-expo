@@ -23,22 +23,36 @@ const LoginScreen = () => {
         { label: 'Siswa', value: 'siswa', path: '/siswaHome' }
     ];
 
-    const handleLogin = async () => {
+     const handleLogin = async () => {
         if (!username || !password) {
             Alert.alert('Error', 'Username and Password are required.');
             return;
         }
-
+    
         setLoading(true);
         try {
             const url = `https://kfbt6z3d-3000.asse.devtunnels.ms/${selectedRole}/auth/login`;
-            
             const response = await axios.post(url, { username, password });
-            const token = response.data.data.token;
-
+            
+            const resData = response.data.data;
+            const token = resData.token;
+    
             if (token) {
                 await AsyncStorage.setItem('token', token);
                 await AsyncStorage.setItem('user_role', selectedRole);
+
+                const roleKey = selectedRole.replace('-', '_'); 
+                const userInfo = resData[roleKey];
+    
+                if (userInfo) {
+                    await AsyncStorage.setItem('username', userInfo.username);
+    
+                    const className = userInfo.kelas?.nama_kelas || 'No Class Assigned';
+                    await AsyncStorage.setItem('nama_kelas', className);
+                    
+                    const identity = userInfo.nip || userInfo.nis || '';
+                    await AsyncStorage.setItem('user_identity', identity);
+                }
                 
                 const targetPath = ROLE_OPTIONS.find(r => r.value === selectedRole).path;
                 router.replace(targetPath);

@@ -12,7 +12,7 @@ const navbarWali = () => {
       <Link href="/" style={{ paddingHorizontal: 15 }}>
          <MaterialIcons name="home" size={44} color="#E0FFFF" />
       </Link>
-      <Link href='/createClass' className='border-2 border-matcha-green-50 p-4 rounded-full -top-10 bg-matcha-green-100'>
+      <Link href='/generateQr' className='border-2 border-matcha-green-50 p-4 rounded-full -top-10 bg-matcha-green-100'>
         <FontAwesome name="plus-circle" size={40} color="#E0FFFF" />      
       </Link>    
       <Link href="/history" style={{ paddingHorizontal: 15 }}>
