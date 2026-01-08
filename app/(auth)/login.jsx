@@ -2,13 +2,14 @@ import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Link, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import React, { useState, useEffect } from 'react'; 
+import { Alert, Image, Modal, Pressable, Text, TextInput, View, ActivityIndicator } from 'react-native';
 
 const LoginScreen = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true); 
     const [showPassword, setShowPassword] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [selectedRole, setSelectedRole] = useState('admin');
@@ -23,7 +24,31 @@ const LoginScreen = () => {
         { label: 'Siswa', value: 'siswa', path: '/siswaHome' }
     ];
 
-     const handleLogin = async () => {
+    // --- AUTO LOGIN ---
+    useEffect(() => {
+        const checkExistingSession = async () => {
+            try {
+                const token = await AsyncStorage.getItem('token');
+                const savedRole = await AsyncStorage.getItem('user_role');
+
+                if (token && savedRole) {
+                    const roleConfig = ROLE_OPTIONS.find(r => r.value === savedRole);
+                    if (roleConfig) {
+                        router.replace(roleConfig.path);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Auth check error:', e);
+            } finally {
+                setCheckingAuth(false);
+            }
+        };
+
+        checkExistingSession();
+    }, []);
+
+    const handleLogin = async () => {
         if (!username || !password) {
             Alert.alert('Error', 'Username and Password are required.');
             return;
@@ -38,6 +63,7 @@ const LoginScreen = () => {
             const token = resData.token;
     
             if (token) {
+                // Simpan Token dan Role untuk pengecekan auto-login nanti
                 await AsyncStorage.setItem('token', token);
                 await AsyncStorage.setItem('user_role', selectedRole);
 
@@ -46,10 +72,8 @@ const LoginScreen = () => {
     
                 if (userInfo) {
                     await AsyncStorage.setItem('username', userInfo.username);
-    
                     const className = userInfo.kelas?.nama_kelas || 'No Class Assigned';
                     await AsyncStorage.setItem('nama_kelas', className);
-                    
                     const identity = userInfo.nip || userInfo.nis || '';
                     await AsyncStorage.setItem('user_identity', identity);
                 }
@@ -64,6 +88,14 @@ const LoginScreen = () => {
         }
     };
 
+    if (checkingAuth) {
+        return (
+            <View className="flex-1 bg-matcha-green-50 justify-center items-center">
+                <ActivityIndicator size="large" color="#2F6565" />
+            </View>
+        );
+    }
+
     return (
         <View className="flex-1 items-center justify-between bg-matcha-green-50 -z-20 pb-20">
             <View className="h-96 w-full bg-matcha-green-100 rounded-b-[80px] items-center justify-center">
@@ -72,7 +104,6 @@ const LoginScreen = () => {
             <View className="h-96 w-full bg-yellow-400 rounded-b-[80px] absolute -z-10 top-3"></View>
 
             <View className='w-full px-9 flex gap-6 justify-center'>
-                
                 <Pressable 
                     onPress={() => setShowRoleModal(true)}
                     className="flex-row items-center border-b-2 border-b-gray-500 pb-2 justify-between"
@@ -126,7 +157,7 @@ const LoginScreen = () => {
                 <Text>Don't have an account?</Text>
                 <Link href='/register' className='underline text-blue-500 text-lg'>Register</Link>
             </View>
-
+        
             <Modal visible={showRoleModal} transparent={true} animationType="fade">
                 <Pressable 
                     className="flex-1 bg-black/50 justify-center items-center" 

@@ -1,97 +1,204 @@
 import React, { useState, useEffect } from 'react'
-import { Text, View, Pressable } from 'react-native'
+import { Text, View, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import axios from 'axios'
+import { useRouter } from 'expo-router' 
+import { FontAwesome } from '@expo/vector-icons' 
 import Navbar from '../components/navbarWali'
 import CreateClass from '../components/createClass'
-import { Link } from 'expo-router'
+import LoginClass from '../components/loginClass'
+import SiswaCard from '../components/SiswaCard' 
 
 const waliHome = () => {
-    const [modalVisible, setModalVisible] = useState(false);
-    const [userData, setUserData] = useState({
-        username: 'Loading...',
-        namaKelas: 'Loading...'
-    });
+    const router = useRouter(); 
+    
+    const [createModalVisible, setCreateModalVisible] = useState(false);
+    const [loginModalVisible, setLoginModalVisible] = useState(false);
+    
+    const [siswaList, setSiswaList] = useState([]);
+    const [rekapList, setRekapList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('umum');
+    const [userData, setUserData] = useState({ username: '', namaKelas: '' });
+
+    const handleLogoutApp = () => {
+        Alert.alert("Logout", "Yakin ingin keluar aplikasi?", [
+            { text: "Batal", style: "cancel" },
+            { 
+                text: "Logout", 
+                onPress: async () => {
+                    try {
+                        await AsyncStorage.clear();
+                        router.replace("/");
+                    } catch (err) {}
+                } 
+            }
+        ]);
+    };
+
+    const handleLogoutKelas = () => {
+        Alert.alert("Keluar Kelas", "Anda akan keluar dari kelas ini.", [
+            { text: "Batal", style: "cancel" },
+            { 
+                text: "Keluar", 
+                style: "destructive",
+                onPress: async () => {
+                    try {
+                        const token = await AsyncStorage.getItem('token');
+                        await axios.post('https://kfbt6z3d-3000.asse.devtunnels.ms/kelas/auth/logout', {}, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        await AsyncStorage.removeItem('nama_kelas');
+                        setUserData(prev => ({ ...prev, namaKelas: '' }));
+                        setSiswaList([]);
+                        setRekapList([]);
+                    } catch (err) {
+                        await AsyncStorage.removeItem('nama_kelas');
+                        setUserData(prev => ({ ...prev, namaKelas: '' }));
+                    }
+                } 
+            }
+        ]);
+    };
+
+    const fetchAllData = async () => {
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('token');
+            const user = await AsyncStorage.getItem('username');
+            const kls = await AsyncStorage.getItem('nama_kelas');
+            
+            const initialClass = (kls === 'No Class' || !kls) ? '' : kls;
+            setUserData({ username: user || 'Wali', namaKelas: initialClass });
+
+            if (token) {
+                const resDetail = await axios.get('https://kfbt6z3d-3000.asse.devtunnels.ms/kelas/detail', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (resDetail.data?.success) {
+                    const detailData = resDetail.data.data;
+                    setSiswaList(detailData.siswa || []);
+                    const serverClassName = detailData.nama_kelas || '';
+                    setUserData(prev => ({ ...prev, namaKelas: serverClassName }));
+                    await AsyncStorage.setItem('nama_kelas', serverClassName);
+
+                    if (serverClassName) {
+                        const resRekap = await axios.get('https://kfbt6z3d-3000.asse.devtunnels.ms/kelas/rekap', {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (resRekap.data?.succes) setRekapList(resRekap.data.data || []);
+                    }
+                } else {
+                    setUserData(prev => ({ ...prev, namaKelas: '' }));
+                }
+            }
+        } catch (e) {
+            if (e.response?.status === 401) {
+                await AsyncStorage.clear();
+                router.replace("/");
+            } else {
+                setUserData(prev => ({ ...prev, namaKelas: '' }));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const getData = async () => {
-            try {
-                const username = await AsyncStorage.getItem('username');
-                const namaKelas = await AsyncStorage.getItem('nama_kelas');
-                
-                setUserData({
-                    username: username || 'Wali',
-                    namaKelas: namaKelas || 'No Class'
-                });
-            } catch (e) {
-                console.error('Failed to load storage', e);
-            }
-        };
-
-        getData();
+        fetchAllData();
     }, []);
-    const hasClass = userData.namaKelas !== 'No Class' && userData.namaKelas !== 'Loading...';
+
+    const hasClass = userData.namaKelas !== '' && userData.namaKelas !== 'No Class';
 
     return (
-        <View className='flex-1 bg-matcha-green-50'>    
+        <View className='flex-1 bg-matcha-green-50'>
+            <View className='absolute w-full h-10 bg-matcha-green-100 z-50' />
             
-            <View className='flex-1 items-center justify-center bg-matcha-green-50 px-5 gap-10'>
-                
-                <View className='w-full h-8 absolute top-12 mx-5'>
-                    <Text className='text-4xl font-black text-matcha-green-100 uppercase'>
-                        {userData.username}
-                    </Text>        
-                    <Text className='text-2xl font-bold text-gray-800'>Dashboard</Text>        
+            <ScrollView 
+                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 120 }}
+                showsVerticalScrollIndicator={false}
+            >
+                <View className='flex-row justify-between items-center mb-8'>
+                    <View>
+                        <Text className='text-3xl font-black text-matcha-green-100 uppercase'>{userData.username}</Text>
+                        <Text className='text-lg font-bold text-matcha-green-100/70'>Dashboard</Text>
+                    </View>
+                    <Pressable onPress={handleLogoutApp} className="bg-red-50 p-3 rounded-2xl">
+                        <FontAwesome name="sign-out" size={24} color="#ef4444" />
+                    </Pressable>
                 </View>
-                <View className='w-full bg-white h-1/6 rounded-2xl overflow-hidden flex flex-row items-center  mx-10 shadow-sm border border-gray-100'>
-                    <View className='bg-matcha-green-100 h-full w-4'></View>
-                    
-                    <View className='flex-1 items-center justify-center px-4'>
-                        {hasClass ? (
-                            <View className='items-center'>
-                                <Text className='text-gray-400 font-bold text-xs uppercase tracking-widest'>Kelas Anda</Text>
-                                <Text className='text-matcha-green-100 text-3xl font-black'>
-                                    {userData.namaKelas.replace('_', ' ')}
-                                </Text>
-                            </View>
-                        ) : (
-                            <View className='items-center'>
-                                <Text className='text-center text-gray-500 font-medium'>
-                                    {userData.namaKelas === 'Loading...' ? 'Loading...' : "You're currently not in any class"}
-                                </Text>
 
-                                {userData.namaKelas === 'No Class' && (
-                                    <Pressable 
-                                        className='mt-3 bg-matcha-green-100 px-6 py-2 rounded-full shadow-md active:opacity-70'
-                                        onPress={() => setModalVisible(true)}
-                                    >
-                                        <Text className='text-white font-bold'>Create Now</Text>
-                                    </Pressable>
-                                )}
+                <View className='bg-white p-6 rounded-[30px] shadow-sm border border-gray-100 mb-8'>
+                    <View className='flex-row justify-between items-start'>
+                        <View className='flex-1'>
+                            <Text className='text-gray-400 font-bold text-xs uppercase tracking-widest'>Status Kelas</Text>
+                            <Text className='text-3xl font-black text-matcha-green-100 mt-1 uppercase'>
+                                {hasClass ? userData.namaKelas.replace('_', ' ') : 'KOSONG'}
+                            </Text>
+                        </View>
+                        {hasClass && (
+                            <Pressable onPress={handleLogoutKelas} className="bg-red-50 px-4 py-2 rounded-xl flex-row items-center">
+                                <FontAwesome name="sign-out" size={14} color="#ef4444" />
+                                <Text className="text-red-500 font-bold ml-2 text-xs">KELUAR</Text>
+                            </Pressable>
+                        )}
+                    </View>
+                    
+                    {!hasClass && (
+                        <View className="flex-row gap-3 mt-6">
+                            <Pressable 
+                                onPress={() => setLoginModalVisible(true)} 
+                                className='flex-1 bg-white border-2 border-matcha-green-100 p-4 rounded-2xl'
+                            >
+                                <Text className='text-matcha-green-100 text-center font-bold'>MASUK KELAS</Text>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setCreateModalVisible(true)} 
+                                className='flex-1 bg-matcha-green-100 p-4 rounded-2xl'
+                            >
+                                <Text className='text-white text-center font-bold'>BUAT KELAS</Text>
+                            </Pressable>
+                        </View>
+                    )}
+                </View>
+
+                {hasClass ? (
+                    <View>
+                        <View className='flex-row bg-gray-200/50 p-1.5 rounded-2xl mb-8'>
+                            <Pressable onPress={() => setActiveTab('umum')} className={`flex-1 py-4 rounded-xl ${activeTab === 'umum' ? 'bg-white' : ''}`}>
+                                <Text className={`text-center font-bold ${activeTab === 'umum' ? 'text-matcha-green-100' : 'text-gray-500'}`}>Siswa</Text>
+                            </Pressable>
+                            <Pressable onPress={() => setActiveTab('absen')} className={`flex-1 py-4 rounded-xl ${activeTab === 'absen' ? 'bg-white' : ''}`}>
+                                <Text className={`text-center font-bold ${activeTab === 'absen' ? 'text-matcha-green-100' : 'text-gray-500'}`}>Presensi</Text>
+                            </Pressable>
+                        </View>
+
+                        {loading ? (
+                            <ActivityIndicator size="large" color="#2F6565" />
+                        ) : (
+                            <View className="gap-y-4">
+                                {(activeTab === 'umum' ? siswaList : rekapList).map((item, index) => (
+                                    <SiswaCard 
+                                        key={index} 
+                                        data={activeTab === 'umum' ? item : { nama_lengkap: item.siswa.nama_lengkap, status_absen: item.status }} 
+                                        isAbsenMode={activeTab === 'absen'} 
+                                    />
+                                ))}
                             </View>
                         )}
                     </View>
-                </View>
-                <CreateClass isVisible={modalVisible} onClose={() => setModalVisible(false)} />
-            <View className='border-2 border-gray-200 w-full h-2/6 rounded-xl bg-white p-4 flex justify-between items-center'>
-                    <View className='w-full flex flex-row justify-between'>
-                        <Text className='text-xl font-bold text-matcha-green-100'>
-                            Attend class
-                        </Text>
-                        <Text className='text-xl font-bold text-matcha-green-100'>
-                            15-05-2026
-                        </Text>
+                ) : (
+                    <View className="items-center mt-10">
+                        <FontAwesome name="folder-open-o" size={60} color="#cbd5e1" />
+                        <Text className="text-gray-400 mt-4 text-center">Silakan pilih opsi Masuk atau Buat Kelas.</Text>
                     </View>
-                    <View className='w-full flex items-center justify-between'>
-                        <Text className='underline text-matcha-green-100 font-bold text-4xl'>07:00-15:00</Text>
-                        <Text>30 min</Text>  
-                        <Text className='underline font-medium text-matcha-green-100'>Before class start</Text>  
-                    </View>
-                    <Link href='/generateQr' className='font-bold text-white bg-matcha-green-100 rounded-md p-2'>
-                        Generate Qr
-                    </Link>
-            </View>
-            </View>
-            <Navbar/>
+                )}
+            </ScrollView>
+
+            <CreateClass isVisible={createModalVisible} onClose={() => { setCreateModalVisible(false); fetchAllData(); }} />
+            <LoginClass isVisible={loginModalVisible} onClose={() => { setLoginModalVisible(false); fetchAllData(); }} />
+            <Navbar />
         </View>
     )
 }

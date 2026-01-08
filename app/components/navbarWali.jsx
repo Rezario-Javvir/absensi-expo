@@ -8,16 +8,10 @@ import { Link } from 'expo-router';
 
 const navbarWali = () => {
   return (
-      <View className='bg-matcha-green-100 w-full absolute h-24 bottom-0 flex items-center justify-between px-5 flex-row'>
-      <Link href="/" style={{ paddingHorizontal: 15 }}>
-         <MaterialIcons name="home" size={44} color="#E0FFFF" />
-      </Link>
+      <View className='bg-matcha-green-100 w-full absolute h-24 bottom-0 flex items-center justify-center px-5 flex-row'>
       <Link href='/generateQr' className='border-2 border-matcha-green-50 p-4 rounded-full -top-10 bg-matcha-green-100'>
         <FontAwesome name="plus-circle" size={40} color="#E0FFFF" />      
-      </Link>    
-      <Link href="/history" style={{ paddingHorizontal: 15 }}>
-         <MaterialIcons name="history" size={44} color="#E0FFFF" />
-      </Link>
+      </Link>   
     </View>
   )
 }

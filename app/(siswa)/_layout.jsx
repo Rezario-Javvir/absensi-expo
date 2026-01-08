@@ -7,6 +7,7 @@ const RootLayout = () => {
       <Stack>
           <Stack.Screen name="siswaHome" options={{headerShown:false}} />
           <Stack.Screen name="scanQr" options={{headerShown:false}} />
+          <Stack.Screen name="profile" options={{headerShown:false}} />
       </Stack>
   )
 }

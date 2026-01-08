@@ -4,6 +4,7 @@ import '../global.css'
 import { MaterialIcons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const navbarSiswa = () => {
   return (
@@ -14,8 +15,8 @@ const navbarSiswa = () => {
       <Link href="/scanQr" style={{ paddingHorizontal: 15 }} className='border-2 border-matcha-green-50 p-4 rounded-full -top-10 bg-matcha-green-100'>
         <MaterialCommunityIcons name="qrcode-scan" size={42} color="#E0FFFF" />
       </Link>
-      <Link href="/history" style={{ paddingHorizontal: 15 }}>
-         <MaterialIcons name="history" size={44} color="#E0FFFF" />
+      <Link href="/profile" style={{ paddingHorizontal: 15 }}>
+         <Ionicons name="person" size={44} color="#E0FFFF" />
       </Link>
     </View>
   )
