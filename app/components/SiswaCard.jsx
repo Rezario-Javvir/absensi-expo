@@ -1,9 +1,25 @@
 import React from 'react'
-import { View, Text, Pressable } from 'react-native'
+import { View, Text, Pressable, Alert } from 'react-native'
 import { FontAwesome } from '@expo/vector-icons'
 
-const SiswaCard = ({ data, isAbsenMode }) => {
+const SiswaCard = ({ data, isAbsenMode, onUpdate }) => {
     if (!data) return null;
+
+    const handlePressStatus = () => {
+        if (!isAbsenMode) return;
+        
+        Alert.alert(
+            "Ubah Status",
+            `Pilih status kehadiran baru untuk ${data.nama_lengkap}:`,
+            [
+                { text: "Hadir", onPress: () => onUpdate(data.id, 'hadir') },
+                { text: "Izin", onPress: () => onUpdate(data.id, 'izin') },
+                { text: "Sakit", onPress: () => onUpdate(data.id, 'sakit') },
+                { text: "Alfa", onPress: () => onUpdate(data.id, 'alfa') },
+                { text: "Batal", style: "cancel" }
+            ]
+        );
+    };
 
     return (
         <View className='w-full bg-white rounded-xl h-32 flex items-center justify-between flex-row relative overflow-hidden shadow-md px-6 mb-4'>
@@ -19,11 +35,14 @@ const SiswaCard = ({ data, isAbsenMode }) => {
                 </Text>
 
                 {isAbsenMode ? (
-                    <View className={`px-3 py-1 rounded-full self-start ${data?.status_absen === 'hadir' ? 'bg-green-100' : 'bg-red-100'}`}>
-                        <Text className={`font-bold text-[10px] uppercase ${data?.status_absen === 'hadir' ? 'text-green-600' : 'text-red-600'}`}>
+                    <Pressable 
+                        onPress={handlePressStatus}
+                        className={`px-3 py-1 rounded-full self-start ${data?.status_absen === 'hadir' ? 'bg-green-100' : 'bg-yellow-100'}`}
+                    >
+                        <Text className={`font-bold text-[10px] uppercase ${data?.status_absen === 'hadir' ? 'text-green-600' : 'text-yellow-600'}`}>
                             {data?.status_absen || 'Tanpa Keterangan'}
                         </Text>
-                    </View>
+                    </Pressable>
                 ) : (
                     <View>
                         <Text className='font-medium text-gray-500 text-xs'>ID: {data?.id || '-'}</Text>

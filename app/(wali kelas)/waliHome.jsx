@@ -21,6 +21,29 @@ const waliHome = () => {
     const [activeTab, setActiveTab] = useState('umum');
     const [userData, setUserData] = useState({ username: '', namaKelas: '' });
 
+    const handleUpdateStatus = async (siswaId, statusBaru) => {
+        try {
+            const token = await AsyncStorage.getItem('token');
+            const response = await axios.put(
+                'https://kfbt6z3d-3000.asse.devtunnels.ms/absensi/edit-absensi', 
+                {
+                    siswa_id: Number(siswaId),
+                    new_status: statusBaru
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            if (response.data?.success) {
+                Alert.alert("Berhasil", "Status absensi diperbarui");
+                fetchAllData(); 
+            }
+        } catch (error) {
+            Alert.alert("Gagal", "Gagal memperbarui status ke server");
+        }
+    };
+
     const handleLogoutApp = () => {
         Alert.alert("Logout", "Yakin ingin keluar aplikasi?", [
             { text: "Batal", style: "cancel" },
@@ -114,7 +137,6 @@ const waliHome = () => {
     return (
         <View className='flex-1 bg-matcha-green-50'>
             <View className='absolute w-full h-10 bg-matcha-green-100 z-50' />
-            
             <ScrollView 
                 contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 120 }}
                 showsVerticalScrollIndicator={false}
@@ -144,19 +166,12 @@ const waliHome = () => {
                             </Pressable>
                         )}
                     </View>
-                    
                     {!hasClass && (
                         <View className="flex-row gap-3 mt-6">
-                            <Pressable 
-                                onPress={() => setLoginModalVisible(true)} 
-                                className='flex-1 bg-white border-2 border-matcha-green-100 p-4 rounded-2xl'
-                            >
+                            <Pressable onPress={() => setLoginModalVisible(true)} className='flex-1 bg-white border-2 border-matcha-green-100 p-4 rounded-2xl'>
                                 <Text className='text-matcha-green-100 text-center font-bold'>MASUK KELAS</Text>
                             </Pressable>
-                            <Pressable 
-                                onPress={() => setCreateModalVisible(true)} 
-                                className='flex-1 bg-matcha-green-100 p-4 rounded-2xl'
-                            >
+                            <Pressable onPress={() => setCreateModalVisible(true)} className='flex-1 bg-matcha-green-100 p-4 rounded-2xl'>
                                 <Text className='text-white text-center font-bold'>BUAT KELAS</Text>
                             </Pressable>
                         </View>
@@ -181,8 +196,13 @@ const waliHome = () => {
                                 {(activeTab === 'umum' ? siswaList : rekapList).map((item, index) => (
                                     <SiswaCard 
                                         key={index} 
-                                        data={activeTab === 'umum' ? item : { nama_lengkap: item.siswa.nama_lengkap, status_absen: item.status }} 
+                                        data={activeTab === 'umum' ? item : { 
+                                            id: item.siswa.id, 
+                                            nama_lengkap: item.siswa.nama_lengkap, 
+                                            status_absen: item.status 
+                                        }} 
                                         isAbsenMode={activeTab === 'absen'} 
+                                        onUpdate={handleUpdateStatus}
                                     />
                                 ))}
                             </View>
@@ -195,7 +215,6 @@ const waliHome = () => {
                     </View>
                 )}
             </ScrollView>
-
             <CreateClass isVisible={createModalVisible} onClose={() => { setCreateModalVisible(false); fetchAllData(); }} />
             <LoginClass isVisible={loginModalVisible} onClose={() => { setLoginModalVisible(false); fetchAllData(); }} />
             <Navbar />

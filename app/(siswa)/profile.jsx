@@ -38,12 +38,12 @@ const profile = () => {
     }
 
     return (
-        <View className='flex-1 items-center justify-center bg-matcha-green-50 px-6'>
+        <View className='flex-1 items-center justify-center bg-matcha-green-100 px-6'>
             
-            <View className='h-44 w-44 rounded-full bg-matcha-green-100 overflow-hidden mb-5 border-4 border-white'>
+            <View className='h-44 w-44 rounded-full bg-matcha-green-50 overflow-hidden mb-5 border-4 border-white'>
                 {siswaData?.avatar ? (
                     <Image 
-                        source={{ url: `https://kfbt6z3d-3000.asse.devtunnels.ms/public${siswaData.avatar}` }} 
+                        source={{ url: `https://kfbt6z3d-3000.asse.devtunnels.ms/uploads/${siswaData.avatar}` }} 
                         className="w-full h-full"
                     />
                 ) : (
